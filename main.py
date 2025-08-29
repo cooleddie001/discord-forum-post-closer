@@ -52,13 +52,24 @@ def sanity_checks(interaction):
     parent_forum = interaction.channel.parent
     if not hasattr(parent_forum, "available_tags"):
         return False, "either not a forum channel, or no tags"
+    
+    #check if the bot have permisisons to close the post (manage_threads)
+    if not interaction.channel.permissions_for(interaction.guild.me).manage_threads:
+        return False, "bot does not have permission to close this post"
 
     #cache done tag, if we haven't done so already
     if done_tags.get(interaction.channel.parent.id, None) is None:
-        done_tags[interaction.channel.parent.id] = discord.utils.get(parent_forum.available_tags, name="DONE")
+        done_tag = next(
+            (tag for tag in parent_forum.available_tags if "done" in tag.name.lower()),
+            None
+        )
+        done_tags[interaction.channel.parent.id] = done_tag
     
     #if done tag is applied, it is already resolved, return
     done_tag = done_tags[interaction.channel.parent.id]
+    if done_tag is None:
+        return False, "this channel needs a DONE tag"
+
     if done_tag in interaction.channel.applied_tags:
         return False, "already resolved"
 
